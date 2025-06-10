@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import {
+  useAuthModal,
+  useLogout,
+  useSigner,
+  useUser,
+} from "@account-kit/react";
 import Image from 'next/image';
+import { useState } from 'react';
 import ProgressStepper from './components/ProgressStepper';
 import { generateSteps } from "./utils";
-import { createWalletClient, custom } from 'viem';
-import { baseSepolia } from 'viem/chains';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,10 +36,13 @@ export default function Page() {
     const [showStepper, setShowStepper] = useState({});
     const [stepperRunIdLogistics, setStepperRunIdLogistics] = useState({});
     const [stepperRunIdWarranty, setStepperRunIdWarranty] = useState({});
-    const [walletClient, setWalletClient] = useState(null);
-    const [account, setAccount] = useState(null);
     const [logisticsComplete, setLogisticsComplete] = useState({});
     const [showWalletAlert, setShowWalletAlert] = useState(false);
+
+    const { openAuthModal } = useAuthModal();
+    const { logout } = useLogout();
+    const user = useUser();
+    const { signer, status: signerStatus } = useSigner() || {};
 
     const products = [
         { name: "ChronoMark", model: "Mark II", image: "/swatch.png" },
@@ -43,41 +50,26 @@ export default function Page() {
         { name: "Fossil", model: "Chrono", image: "/fossil.png" },
     ];
 
-    const handleConnect = async () => {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                const client = createWalletClient({
-                    chain: baseSepolia,
-                    transport: custom(window.ethereum)
-                });
-                const [address] = await client.requestAddresses();
-                setWalletClient(client);
-                setAccount(address);
-                setShowWalletAlert(false);
-            } catch (error) {
-                console.error("Error connecting to wallet:", error);
-            }
-        } else {
-            console.error('MetaMask is not installed.');
-        }
-    };
-    
     const handleStartPurchase = (index) => {
-        if (!account) {
+        if (!user) {
             setShowWalletAlert(true);
             return;
         }
         setShowStepper((prev) => ({ ...prev, [index]: !prev[index] }));
     };
 
+    const isConnected = user != null;
+
     return (
         <div className="min-h-screen flex flex-col">
             <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container flex h-14 items-center justify-between">
                     <h1 className="text-xl font-bold">Modern Timepieces</h1>
-                    <Button onClick={!account ? handleConnect : () => {}}>
-                        {account ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
-                    </Button>
+                    {signerStatus === 'initializing' ? <Button>Loading...</Button> :
+                        <Button onClick={!isConnected ? openAuthModal : logout}>
+                            {isConnected ? `Sign Out` : 'Sign In'}
+                        </Button>
+                    }
                 </div>
             </header>
 
@@ -140,7 +132,7 @@ export default function Page() {
 
                                         <ProgressStepper
                                             key={`logistics-${stepperRunIdLogistics[index] || 0}`}
-                                            steps={generateSteps(index + 1, 'logistics', walletClient, account)}
+                                            steps={generateSteps(index + 1, 'logistics', signer, user?.smartAccountAddress)}
                                             purpose="logistics"
                                             start={true}
                                             onComplete={() => {
@@ -150,7 +142,7 @@ export default function Page() {
 
                                         {logisticsComplete[index] && <ProgressStepper
                                             key={`warranty-${stepperRunIdWarranty[index] || 0}`}
-                                            steps={generateSteps(index + 1, 'warranty', walletClient, account)}
+                                            steps={generateSteps(index + 1, 'warranty', signer, user?.smartAccountAddress)}
                                             purpose="warranty"
                                             start={logisticsComplete[index]}
                                         />}
@@ -170,14 +162,17 @@ export default function Page() {
             <AlertDialog open={showWalletAlert} onOpenChange={setShowWalletAlert}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Connect Your Wallet</AlertDialogTitle>
+                        <AlertDialogTitle>Please Sign In</AlertDialogTitle>
                         <AlertDialogDescription>
-                            To begin the purchase process, you need to connect your Web3 wallet. Please ensure you have MetaMask or a compatible wallet installed.
+                            To begin the purchase process, you need to sign in with your wallet.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConnect}>Connect Wallet</AlertDialogAction>
+                        <AlertDialogAction onClick={() => {
+                            setShowWalletAlert(false);
+                            openAuthModal();
+                        }}>Sign In</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

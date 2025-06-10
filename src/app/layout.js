@@ -1,4 +1,8 @@
+import { config } from "../config";
+import { cookieToInitialState } from "@account-kit/core";
+import { headers } from "next/headers";
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata = {
   title: "Create Next App",
@@ -6,12 +10,17 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const initialState = cookieToInitialState(
+    config,
+    headers().get("cookie")
+  );
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-background text-foreground">
-        <div className="container mx-auto p-4">
-          {children}
-        </div>
+        <Providers initialState={initialState}>
+          <div className="container mx-auto p-4">{children}</div>
+        </Providers>
       </body>
     </html>
   );
