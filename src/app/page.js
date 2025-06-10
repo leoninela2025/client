@@ -1,12 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import ProgressStepper from '../app/components/ProgressStepper';
+import ProgressStepper from './components/ProgressStepper';
 import { generateSteps } from "./utils";
 import { createWalletClient, custom } from 'viem';
 import { baseSepolia } from 'viem/chains';
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 
 export default function Page() {
     const [showStepper, setShowStepper] = useState({});
@@ -15,127 +35,152 @@ export default function Page() {
     const [walletClient, setWalletClient] = useState(null);
     const [account, setAccount] = useState(null);
     const [logisticsComplete, setLogisticsComplete] = useState({});
+    const [showWalletAlert, setShowWalletAlert] = useState(false);
 
-    const imageLocations = ['/swatch.png', '/guess_charolette.png', '/fossil.png'];
+    const products = [
+        { name: "ChronoMark", model: "Mark II", image: "/swatch.png" },
+        { name: "Guess", model: "Charolette", image: "/guess_charolette.png" },
+        { name: "Fossil", model: "Chrono", image: "/fossil.png" },
+    ];
 
     const handleConnect = async () => {
         if (typeof window.ethereum !== 'undefined') {
             try {
                 const client = createWalletClient({
-                    chain: baseSepolia, // You can change this to your target chain
+                    chain: baseSepolia,
                     transport: custom(window.ethereum)
                 });
                 const [address] = await client.requestAddresses();
                 setWalletClient(client);
                 setAccount(address);
+                setShowWalletAlert(false);
             } catch (error) {
                 console.error("Error connecting to wallet:", error);
-                alert("Failed to connect wallet. See console for details.");
             }
         } else {
-            alert('MetaMask is not installed. Please install it to use this feature.');
+            console.error('MetaMask is not installed.');
         }
+    };
+    
+    const handleStartPurchase = (index) => {
+        if (!account) {
+            setShowWalletAlert(true);
+            return;
+        }
+        setShowStepper((prev) => ({ ...prev, [index]: !prev[index] }));
     };
 
     return (
-        <div>
-            <div style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px'
-            }}>
-                <button
-                    onClick={handleConnect}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        <div className="min-h-screen flex flex-col">
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="container flex h-14 items-center justify-between">
+                    <h1 className="text-xl font-bold">Modern Timepieces</h1>
+                    <Button onClick={!account ? handleConnect : () => {}}>
+                        {account ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
+                    </Button>
+                </div>
+            </header>
+
+            <main className="flex-grow container py-8">
+                <div
+                    className="grid gap-8"
+                    style={{
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
+                    }}
                 >
-                    {account ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
-                </button>
-            </div>
-            <div
-                className="grid gap-x-12 gap-y-16 w-full"
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                }}
-            >
-                {imageLocations.map((_, index) => (
-                    <div
-                        key={index + 1}
-                        className="flex flex-col items-center"
-                    >
-                        <Link
-                            href="#"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                if (!account) {
-                                    alert('Please connect your wallet first!');
-                                    return;
-                                }
-                                setShowStepper((prev) => ({ ...prev, [index + 1]: true }));
-                            }}
-                            className="flex items-center justify-center mb-4"
-                        >
-                            <Image
-                                src={imageLocations[index]}
-                                alt={`Watch #${index + 1}`}
-                                width={180}
-                                height={38}
-                            />
-                        </Link>
-
-                        {showStepper[index + 1] && (
-                            <div className="mb-4">
-                                <div className="flex justify-end gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setStepperRunIdLogistics((prev) => ({
-                                                ...prev,
-                                                [index + 1]: (prev[index + 1] || 0) + 1,
-                                            }));
-                                        }}
-                                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
-                                    >
-                                        Retry logistics quote
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            setStepperRunIdWarranty((prev) => ({
-                                                ...prev,
-                                                [index + 1]: (prev[index + 1] || 0) + 1,
-                                            }));
-                                        }}
-                                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
-                                    >
-                                        Retry warranty check
-                                    </button>
+                    {products.map((product, index) => (
+                        <Card key={index} className="flex flex-col">
+                            <CardHeader>
+                                <CardTitle>{product.name}</CardTitle>
+                                <CardDescription>{product.model} Edition</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <div className="bg-muted rounded-lg flex items-center justify-center p-4 mb-4">
+                                     <Image
+                                        src={product.image}
+                                        alt={`Watch: ${product.name}`}
+                                        width={200}
+                                        height={200}
+                                        className="object-contain h-[200px]"
+                                    />
                                 </div>
-                            </div>
-                        )}
+                                
+                                {showStepper[index] && <Separator className="my-4" />}
 
-                        {showStepper[index + 1] && (
-                            <div className="w-full">
-                                <ProgressStepper
-                                    key={`logistics-${stepperRunIdLogistics[index + 1] || 0}`}
-                                    steps={generateSteps(index + 1, 'logistics', walletClient, account)}
-                                    purpose="logistics"
-                                    start={true}
-                                    onComplete={() => {
-                                        setLogisticsComplete((prev) => ({...prev, [index + 1]: true}))
-                                    }}
-                                />
+                                {showStepper[index] && (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setStepperRunIdLogistics((prev) => ({
+                                                        ...prev,
+                                                        [index]: (prev[index] || 0) + 1,
+                                                    }));
+                                                }}
+                                            >
+                                                Retry logistics
+                                            </Button>
 
-                                {logisticsComplete[index+1] && <ProgressStepper
-                                    key={`warranty-${stepperRunIdWarranty[index + 1] || 0}`}
-                                    steps={generateSteps(index + 1, 'warranty', walletClient, account)}
-                                    purpose="warranty"
-                                    start={logisticsComplete[index + 1]}
-                                />}
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                disabled={!logisticsComplete[index]}
+                                                onClick={() => {
+                                                    setStepperRunIdWarranty((prev) => ({
+                                                        ...prev,
+                                                        [index]: (prev[index] || 0) + 1,
+                                                    }));
+                                                }}
+                                            >
+                                                Retry warranty
+                                            </Button>
+                                        </div>
+
+                                        <ProgressStepper
+                                            key={`logistics-${stepperRunIdLogistics[index] || 0}`}
+                                            steps={generateSteps(index + 1, 'logistics', walletClient, account)}
+                                            purpose="logistics"
+                                            start={true}
+                                            onComplete={() => {
+                                                setLogisticsComplete((prev) => ({...prev, [index]: true}))
+                                            }}
+                                        />
+
+                                        {logisticsComplete[index] && <ProgressStepper
+                                            key={`warranty-${stepperRunIdWarranty[index] || 0}`}
+                                            steps={generateSteps(index + 1, 'warranty', walletClient, account)}
+                                            purpose="warranty"
+                                            start={logisticsComplete[index]}
+                                        />}
+                                    </div>
+                                )}
+                            </CardContent>
+                            <CardFooter>
+                                <Button className="w-full" onClick={() => handleStartPurchase(index)}>
+                                    {showStepper[index] ? "Hide Purchase Details" : "Order Now"}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
+            </main>
+
+            <AlertDialog open={showWalletAlert} onOpenChange={setShowWalletAlert}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Connect Your Wallet</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            To begin the purchase process, you need to connect your Web3 wallet. Please ensure you have MetaMask or a compatible wallet installed.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConnect}>Connect Wallet</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

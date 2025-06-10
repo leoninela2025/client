@@ -7,9 +7,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-background text-foreground">
+        <div className="container mx-auto p-4">
+          {children}
+        </div>
       </body>
     </html>
   );
