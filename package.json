@@ -1,9 +1,9 @@
 {
-  "name": "next",
+  "name": "next-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -15,9 +15,11 @@
     "@radix-ui/react-progress": "^1.1.7",
     "framer-motion": "^12.16.0",
     "lucide-react": "^0.513.0",
-    "next": "15.3.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "next": "14.2.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "viem": "^2.16.2",
+    "jose": "^5.6.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,6 +27,7 @@
     "@types/react": "19.1.6",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "eslint": "^8"
   }
 }
