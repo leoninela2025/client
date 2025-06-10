@@ -3,7 +3,7 @@
 import * as Progress from '@radix-ui/react-progress';
 import {useEffect, useRef, useState} from 'react';
 
-export default function ProgressStepper({ steps, purpose }) {
+export default function ProgressStepper({ steps, purpose, onComplete, start }) {
     const [statuses, setStatuses] = useState(Array(steps.length).fill('pending'));
     const [logsByStep, setLogsByStep] = useState(Array(steps.length).fill([]));
 
@@ -23,8 +23,9 @@ export default function ProgressStepper({ steps, purpose }) {
 
     useEffect(() => {
         const runSteps = async () => {
-            if (hasRunRef.current) return;
+            if (hasRunRef.current || !start) return;
             hasRunRef.current = true;
+            let allStepsCompleted = true;
             for (let i = 0; i < steps.length; i++) {
                 updateStatus(i, 'in-progress');
                 try {
@@ -46,14 +47,18 @@ export default function ProgressStepper({ steps, purpose }) {
                 } catch (e) {
                     updateStatus(i, 'failed');
                     log(i, `❌ Failed: ${steps[i].label} - ${e.message || e}`);
+                    allStepsCompleted = false;
                     break;
                 }
+            }
+            if (allStepsCompleted && onComplete) {
+                onComplete();
             }
         };
 
         runSteps();
 
-    }, []);
+    }, [start]);
 
     const updateStatus = (index, status) => {
         setStatuses((prev) => {

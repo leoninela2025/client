@@ -14,6 +14,7 @@ export default function Page() {
     const [stepperRunIdWarranty, setStepperRunIdWarranty] = useState({});
     const [walletClient, setWalletClient] = useState(null);
     const [account, setAccount] = useState(null);
+    const [logisticsComplete, setLogisticsComplete] = useState({});
 
     const imageLocations = ['/swatch.png', '/guess_charolette.png', '/fossil.png'];
 
@@ -118,13 +119,18 @@ export default function Page() {
                                     key={`logistics-${stepperRunIdLogistics[index + 1] || 0}`}
                                     steps={generateSteps(index + 1, 'logistics', walletClient, account)}
                                     purpose="logistics"
+                                    start={true}
+                                    onComplete={() => {
+                                        setLogisticsComplete((prev) => ({...prev, [index + 1]: true}))
+                                    }}
                                 />
 
-                                <ProgressStepper
+                                {logisticsComplete[index+1] && <ProgressStepper
                                     key={`warranty-${stepperRunIdWarranty[index + 1] || 0}`}
                                     steps={generateSteps(index + 1, 'warranty', walletClient, account)}
                                     purpose="warranty"
-                                />
+                                    start={logisticsComplete[index + 1]}
+                                />}
                             </div>
                         )}
                     </div>
